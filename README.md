@@ -95,3 +95,11 @@ To learn more about React Native, take a look at the following resources:
 - [Learn the Basics](https://reactnative.dev/docs/getting-started) - a **guided tour** of the React Native **basics**.
 - [Blog](https://reactnative.dev/blog) - read the latest official React Native **Blog** posts.
 - [`@facebook/react-native`](https://github.com/facebook/react-native) - the Open Source; GitHub **repository** for React Native.
+
+# Automated Documentation Rot Sync
+
+This project now employs an autonomous documentation synchronization workflow to prevent "Documentation Rot".
+Leveraging GitHub Actions and an AI model (Gemini), this system automatically audits recent code changes and commit messages against the `README.md`.
+If a discrepancy is detected, the system will propose and automatically commit updates to the `README.md` to ensure it remains accurate and up-to-date with the codebase.
+This workflow runs on every push to the `main` branch, excluding changes to `README.md` itself to prevent infinite loops.
+The workflow file is located at `.github/workflows/doc-sync.yml` and the core logic is in `scripts/auto-doc-sync.js`.
