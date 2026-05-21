@@ -99,7 +99,7 @@ To learn more about React Native, take a look at the following resources:
 # Automated Documentation Rot Sync
 
 This project now employs an autonomous documentation synchronization workflow to prevent "Documentation Rot".
-Leveraging GitHub Actions and an AI model (Gemini), this system automatically audits recent code changes and commit messages against the `README.md`.
+Leveraging GitHub Actions and an AI model (Gemini), this system automatically audits recent code changes and commit messages against the `README.md`. To enhance reliability, the integration with the Gemini API includes fault-tolerant retry handling for temporary network issues and server errors (e.g., 503 Service Unavailable, 429 Rate Limit).
 If a discrepancy is detected, the system will propose and automatically commit updates to the `README.md` to ensure it remains accurate and up-to-date with the codebase.
 This workflow runs on every push to the `main` branch, excluding changes to `README.md` itself to prevent infinite loops.
 The workflow file is located at `.github/workflows/doc-sync.yml` and the core logic is in `scripts/auto-doc-sync.js`.
