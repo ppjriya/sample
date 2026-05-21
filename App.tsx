@@ -9,11 +9,13 @@ import {
   View,
   ActivityIndicator,
   StatusBar,
+  Alert,
 } from 'react-native';
 import Markdown from 'react-native-markdown-display';
 import {
   fetchCommitDiff,
   fetchCurrentReadme,
+  updateRepositoryReadme,
 } from './src/services/githubService';
 import {
   analyzeDocumentationRot,
@@ -26,10 +28,11 @@ export default function App() {
   const [sha, setSha] = useState('');
 
   const [loading, setLoading] = useState(false);
+  const [syncing, setSyncing] = useState(false);
   const [loadingStage, setLoadingStage] = useState('');
   const [error, setError] = useState('');
+  const [successMessage, setSuccessMessage] = useState('');
 
-  // Day 2 Core Intelligence State
   const [report, setReport] = useState<AnalysisReport | null>(null);
 
   const handleRunAudit = async () => {
@@ -40,6 +43,7 @@ export default function App() {
 
     setLoading(true);
     setError('');
+    setSuccessMessage('');
     setReport(null);
 
     try {
@@ -67,7 +71,46 @@ export default function App() {
     }
   };
 
-  // Helper function to color-code the dashboard UI dynamically based on risk level
+  const handleCommitPatchToGitHub = async () => {
+    if (!report || !report.updatedDocumentation) return;
+
+    setSyncing(true);
+    setError('');
+    setSuccessMessage('');
+
+    try {
+      const customMessage = `docs: auto-fix documentation rot from commit ${sha.substring(
+        0,
+        7,
+      )} via AI`;
+
+      const success = await updateRepositoryReadme(
+        owner.trim(),
+        repo.trim(),
+        report.updatedDocumentation,
+        customMessage,
+      );
+
+      if (success) {
+        setSuccessMessage(
+          '🎉 Remote Source of Truth successfully synchronized on GitHub!',
+        );
+        // Clear report preview since repository is now updated and perfectly aligned
+        setReport(null);
+        Alert.alert(
+          'Success',
+          'README.md has been automatically updated on your main branch!',
+        );
+      }
+    } catch (err: any) {
+      setError(
+        err.message || 'Failed to push documentation fix back to GitHub.',
+      );
+    } finally {
+      setSyncing(false);
+    }
+  };
+
   const getSeverityColors = (severity: string) => {
     switch (severity) {
       case 'High':
@@ -92,11 +135,10 @@ export default function App() {
       <View style={styles.header}>
         <Text style={styles.title}>DocRot Guardian</Text>
         <Text style={styles.subtitle}>
-          Day 2: Autonomous Intelligence Layer
+          Day 3: Automated Remedial Synced Loop
         </Text>
       </View>
 
-      {/* Input Module Container */}
       <View style={styles.inputContainer}>
         <TextInput
           style={styles.input}
@@ -130,7 +172,7 @@ export default function App() {
       <TouchableOpacity
         style={[styles.button, loading && styles.buttonDisabled]}
         onPress={handleRunAudit}
-        disabled={loading}
+        disabled={loading || syncing}
       >
         {loading ? (
           <View style={styles.loadingRow}>
@@ -143,15 +185,16 @@ export default function App() {
       </TouchableOpacity>
 
       {error ? <Text style={styles.errorText}>❌ {error}</Text> : null}
+      {successMessage ? (
+        <Text style={styles.successText}>{successMessage}</Text>
+      ) : null}
 
-      {/* Main Intelligent Report Container */}
       <ScrollView
         style={styles.dashboardView}
         contentContainerStyle={{ paddingBottom: 40 }}
       >
         {report && (
           <View>
-            {/* Dynamic Diagnostics Status Card */}
             <View
               style={[
                 styles.card,
@@ -171,7 +214,23 @@ export default function App() {
               </Text>
             </View>
 
-            {/* Native Markdown Document View */}
+            {/* Day 3 Master Sync Action Component Trigger */}
+            {report.hasDiscrepancy && (
+              <TouchableOpacity
+                style={[styles.syncButton, syncing && styles.buttonDisabled]}
+                onPress={handleCommitPatchToGitHub}
+                disabled={syncing}
+              >
+                {syncing ? (
+                  <ActivityIndicator color="#fff" size="small" />
+                ) : (
+                  <Text style={styles.syncButtonText}>
+                    🚀 Approve & Rewrite README on GitHub
+                  </Text>
+                )}
+              </TouchableOpacity>
+            )}
+
             <Text style={styles.sectionHeading}>
               📄 Generated Patch Preview:
             </Text>
@@ -216,6 +275,15 @@ const styles = StyleSheet.create({
     marginHorizontal: 16,
     marginBottom: 12,
   },
+  syncButton: {
+    backgroundColor: '#10b981',
+    padding: 14,
+    borderRadius: 8,
+    alignItems: 'center',
+    marginBottom: 20,
+    elevation: 3,
+  },
+  syncButtonText: { color: '#fff', fontSize: 14, fontWeight: '800' },
   buttonDisabled: { backgroundColor: '#3730a3' },
   buttonText: { color: '#fff', fontSize: 14, fontWeight: '700' },
   loadingRow: {
@@ -234,9 +302,18 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     marginBottom: 10,
     fontSize: 13,
+    paddingHorizontal: 16,
+  },
+  successText: {
+    color: '#10b981',
+    textAlign: 'center',
+    marginBottom: 10,
+    fontSize: 14,
+    fontWeight: '600',
+    paddingHorizontal: 16,
   },
   dashboardView: { flex: 1, marginHorizontal: 16 },
-  card: { padding: 16, borderRadius: 10, borderWidth: 1.5, marginBottom: 20 },
+  card: { padding: 16, borderRadius: 10, borderWidth: 1.5, marginBottom: 16 },
   cardTitle: { fontSize: 16, fontWeight: 'bold', marginBottom: 6 },
   cardExplanation: { fontSize: 13, lineHeight: 18, fontWeight: '500' },
   sectionHeading: {
@@ -253,7 +330,6 @@ const styles = StyleSheet.create({
   },
 });
 
-// Custom markdown stylesheet overrides to look gorgeous on mobile
 const markdownStyles = {
   body: { color: '#2c3e50', fontSize: 13, lineHeight: 19 },
   heading1: {
